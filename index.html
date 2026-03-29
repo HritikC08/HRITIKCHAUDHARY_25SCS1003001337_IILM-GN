@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan Portal</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+ body{margin:0;font-family:Poppins,sans-serif;background:#f7f2e8;overflow-x:hidden;}
+ .fade-in{animation:fadeIn .6s ease forwards;opacity:0;}
+ @keyframes fadeIn{to{opacity:1;}} 
+ .slide-up{animation:slideUp .6s ease forwards;opacity:0;}
+ @keyframes slideUp{to{opacity:1;transform:translateY(0);}from{transform:translateY(20px);}}
+ .navbar{width:100%;background:#e8dfd1;padding:18px 30px;color:#3a2f1f;display:flex;align-items:center;justify-content:space-between;font-size:22px;font-weight:600;box-shadow:0 2px 10px rgba(0,0,0,0.2);position:sticky;top:0;z-index:10;}
+ .tabs{display:flex;gap:20px;}
+ .tab-btn{background:transparent;border:none;color:#b89545;font-size:16px;font-weight:600;cursor:pointer;padding:8px 14px;border-bottom:3px solid transparent;transition:.3s;} 
+ .tab-btn:hover{color:#3a2f1f;} 
+ .tab-btn.active{border-bottom:3px solid #b89545;color:#3a2f1f;} 
+ .container{max-width:520px;margin:35px auto;background:#fff7ec;color:#3a2f1f;padding:30px;border-radius:14px;box-shadow:0 5px 20px rgba(0,0,0,0.1);} 
+ h2{text-align:center;color:#0d0d0d;font-size:26px;margin-bottom:20px;} 
+ label{font-weight:600;display:block;margin-top:12px;} 
+ select,input{width:100%;padding:12px;margin-top:6px;border-radius:8px;border:1px solid #ccc;background:#f1f1f1;font-size:15px;transition:.3s;} 
+ select:focus,input:focus{border-color:#0d0d0d;box-shadow:0 0 6px rgba(10,42,102,0.3);} 
+ button{width:100%;background:#b89545;color:#fff;border:none;padding:14px;margin-top:25px;font-size:17px;border-radius:10px;font-weight:700;cursor:pointer;transition:.3s;} 
+ button:hover{background:#1a1a1a;transform:translateY(-2px);} 
+ #result,#emi-result{margin-top:20px;padding:18px;border-radius:10px;font-weight:600;display:none;} 
+ .approved{background:#d7ffe7;color:#006633;} 
+ .rejected{background:#ffe3e3;color:#a00000;} 
+/* HIDE NAVBAR ON SCROLL */
+.hide-nav{transform:translateY(-100%);transition:transform .4s ease;}
+.show-nav{transform:translateY(0);transition:transform .4s ease;}
+</style>
+</head>
+<body>
+<div class="navbar fade-in" style="display:flex;align-items:center;gap:15px;">
+ <img src="https://cdn-icons-png.flaticon.com/512/10485/10485640.png" alt="logo" style="width:38px;height:38px;border-radius:8px;">
+ <div style="display:flex;align-items:center;gap:10px;font-weight:700;">
+     <i class="fa-solid fa-building-columns"></i> Loan Portal
+ </div>
+ <div class="tabs">
+     <button class="tab-btn active" onclick="showTab('eligibility', event)">Loan Eligibility</button>
+     <button class="tab-btn" onclick="showTab('emi', event)">EMI Calculator</button>
+ </div>
+</div>
+
+<div class="container slide-up" id="eligibility-section">
+ <h2 class="fade-in">Loan Eligibility Checker</h2>
+ <label>Gender</label><select id="gender"><option value="1">Male</option><option value="0">Female</option></select>
+ <label>Married</label><select id="married"><option value="1">Yes</option><option value="0">No</option></select>
+ <label>Dependents</label><select id="dependents"><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3+</option></select>
+ <label>Education</label><select id="education"><option value="1">Graduate</option><option value="0">Not Graduate</option></select>
+ <label>Self Employed</label><select id="selfemp"><option value="1">Yes</option><option value="0">No</option></select>
+ <label>Applicant Income</label><input id="income" type="number" placeholder="e.g. 50000">
+ <label>Co-Applicant Income</label><input id="coincome" type="number" placeholder="e.g. 20000">
+ <label>Loan Amount</label><input id="loanamt" type="number" placeholder="e.g. 400000">
+ <label>Loan Term (Months)</label><input id="loanterm" type="number" placeholder="e.g. 360">
+ <label>Credit History</label><select id="credit"><option value="1">Good</option><option value="0">Bad</option></select>
+ <label>Property Area</label><select id="area"><option value="2">Urban</option><option value="1">Semiurban</option><option value="0">Rural</option></select>
+ <button onclick="predict()">Check Eligibility</button>
+ <div id="result"></div>
+</div>
+
+<div class="container slide-up" id="emi-section" style="display:none;">
+ <h2>EMI Calculator</h2>
+ <label>Loan Amount (₹)</label><input id="emi-amount" type="number" placeholder="e.g. 500000">
+ <label>Interest Rate (%)</label><input id="emi-rate" type="number" placeholder="e.g. 8.5">
+ <label>Loan Tenure (Months)</label><input id="emi-tenure" type="number" placeholder="e.g. 120">
+ <button onclick="calculateEMI()">Calculate EMI</button>
+ <div id="emi-result"></div>
+</div>
+
+<script>
+function showTab(tab, e){
+ document.querySelectorAll('.tab-btn').forEach(btn=>btn.classList.remove('active'));
+ e.target.classList.add('active');
+ document.getElementById('eligibility-section').style.display = tab==='eligibility'?'block':'none';
+ document.getElementById('emi-section').style.display = tab==='emi'?'block':'none';
+}
+
+function predict(){
+ let income=Number(document.getElementById("income").value);
+ let coincome=Number(document.getElementById("coincome").value);
+ let loan=Number(document.getElementById("loanamt").value);
+ let credit=Number(document.getElementById("credit").value);
+ let depend=Number(document.getElementById("dependents").value);
+
+ let totalIncome = income + coincome;
+ let resultBox=document.getElementById("result");
+ resultBox.style.display="block";
+
+ let score = 0;
+
+ if(totalIncome > 20000) score += 1;
+ if(totalIncome > 40000) score += 1;
+ if(loan < totalIncome * 10) score += 1;
+ if(credit === 1) score += 2;
+ if(depend === 0) score += 1;
+
+ if(score >= 4){
+   resultBox.className="approved";
+   resultBox.innerHTML="<b>Loan Approved ✔</b><br>Your profile meets our financial criteria.";
+ } else {
+   resultBox.className="rejected";
+   resultBox.innerHTML="<b>Loan Not Approved ✘</b><br>Based on income, dependents and credit factors, your risk score is low.";
+ }
+}
+
+function calculateEMI(){
+ let P=Number(document.getElementById("emi-amount").value);
+ let R=Number(document.getElementById("emi-rate").value)/1200;
+ let N=Number(document.getElementById("emi-tenure").value);
+ let emi=(P*R*Math.pow(1+R,N))/(Math.pow(1+R,N)-1);
+ emi=Math.round(emi);
+ let box=document.getElementById("emi-result");
+ box.style.display="block";
+ box.innerHTML=`<b>Your Monthly EMI:</b> ₹${emi}`;
+}
+</script>
+<script>
+let lastScroll=0;
+const nav=document.querySelector('.navbar');
+window.addEventListener('scroll',()=>{
+ let current=window.scrollY;
+ if(current>lastScroll){nav.classList.add('hide-nav');nav.classList.remove('show-nav');}
+ else{nav.classList.add('show-nav');nav.classList.remove('hide-nav');}
+ lastScroll=current;
+});
+</script>
+
+<!-- FOOTER -->
+<div style="width:100%;margin-top:50px;background:#e8dfd1;color:#3a2f1f;padding:30px 20px;text-align:center;font-weight:600;border-top:3px solid #b89545;">
+    <div style="font-size:18px; margin-bottom:10px;">© Loan Portal 2025</div>
+    <div style="margin-bottom:12px;">
+        <a href="#" style="color:#b89545;text-decoration:none;margin:0 10px;">About</a>|
+        <a href="#" style="color:#b89545;text-decoration:none;margin:0 10px;">Contact</a>|
+        <a href="#" style="color:#b89545;text-decoration:none;margin:0 10px;">Help</a>
+    </div>
+    <div style="margin-bottom:18px;">
+        <a href="#" style="color:#3a2f1f;text-decoration:underline;margin:0 10px;">Terms</a>
+        <a href="#" style="color:#3a2f1f;text-decoration:underline;margin:0 10px;">Privacy Policy</a>
+    </div>
+
+    <!-- PROJECT INFO -->
+    <div style="margin-top:20px;padding:15px;border-radius:10px;background:#fff7ec;color:#3a2f1f;box-shadow:0 3px 10px rgba(0,0,0,0.1);max-width:500px;margin-left:auto;margin-right:auto;">
+        <div style="font-size:18px;font-weight:700;margin-bottom:10px;">Project Members</div>
+        <div style="font-size:15px;line-height:1.6; text-align:left;">
+            • Kuljeet Nischal<br>
+            • Yash<br>
+            • Nikhil Pratap Singh<br>
+            • Bhargav Shukla<br>
+            • Hrik Chaudhary
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
